@@ -34,4 +34,4 @@ cp -R $mattermostDir/data/* $localBackupDir/data/
 pg_dump -U postgres -h /var/run/postgresql/ -p 5432 mattermost | gzip > $localBackupDir/postgresql/$(date +\%Y-\%m-\%d_\%H:\%M:\%S)_dump.gz
 
 # upload to backup server
-sshpass -P 'passphrase' -p "$sshPassphrase" rsync -avz -e "ssh -i $sshKeyPath -p $sshPort" "$localBackupDir" "$sshUser@$sshHost:$remoteBackupDir"
+sshpass -P 'passphrase' -p "$sshPassphrase" rsync -avz -e "ssh -i $sshKeyPath -p $sshPort" "$localBackupDir/" "$sshUser@$sshHost:$remoteBackupDir/"
