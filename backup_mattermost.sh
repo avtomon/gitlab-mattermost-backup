@@ -13,20 +13,25 @@ else
     exit 1
 fi
 
+echo "mattermostDir = $mattermostDir"
+echo "localBackupDir = $localBackupDir"
+echo "remoteBackupDir = $remoteBackupDir"
+echo "sshHost = $sshHost"
+echo "sshPort = $sshPort"
+echo "sshUser = $sshUser"
+echo "sshKeyPath = $sshPassphrase" 
+echo "sshPassphrase = $sshPassphrase"
+
 # prepare
-rm -rf $gitlabBackupDir/mattermost
-mkdir -p $gitlabBackupDir/mattermost/data
+#rm -rf $localBackupDir
+mkdir -p $localBackupDir
+mkdir -p $localBackupDir/data
+mkdir -p $localBackupDir/postgresql
 
 # backup data
-cp -R $mattermostDir/* $gitlabBackupDir/mattermost/data
+cp -R $mattermostDir/data/* $localBackupDir/data/
 # backup postgres
-su - mattermost -c "/opt/gitlab/embedded/bin/pg_dump -U gitlab_mattermost -h /var/opt/gitlab/postgresql -p 5432 mattermost_production" > $gitlabBackupDir/mattermost/mattermost_production_backup.sql
+pg_dump -U postgres -h /var/run/postgresql/ -p 5432 mattermost | gzip > $localBackupDir/postgresql/$(date +\%Y-\%m-\%d_\%H:\%M:\%S)_dump.gz
 
-# package and cleanup
-backupfile=$(date +%s_%Y_%m_%d)_mattermost_backup.tar.gz
-tar -zcf $gitlabBackupDir/$backupfile $gitlabBackupDir/mattermost
-rm -rf $gitlabBackupDir/mattermost
-
-# upload to S3
-$awscli s3 cp $gitlabBackupDir/$backupfile $s3path
-rm -f $gitlabBackupDir/$backupfile
+# upload to backup server
+sshpass -P 'passphrase' -p "$sshPassphrase" rsync -avz -e "ssh -i $sshKeyPath -p $sshPort" "$localBackupDir" "$sshUser@$sshHost:$remoteBackupDir"
